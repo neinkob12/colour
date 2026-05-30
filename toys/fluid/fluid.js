@@ -22,15 +22,11 @@ const pointer = createPointer(canvas);
 // Dialed-down defaults on phones / low-power devices (genuine, not shrunk).
 const LONG_AXIS = device.pick(88, 160); // grid cells on the longer screen edge
 const ITERS = device.pick(10, 14); // Jacobi pressure iterations
-const SPLAT_R = device.pick(2, 3); // injection kernel radius in cells
+const SPLAT_R = device.pick(4, 6); // injection kernel radius in cells
 
 const VEL_DECAY = 0.998;
-const SIGMA = SPLAT_R * 0.6 + 0.3;
-
-// Faint ink baseline so empty space keeps the --ink tint, not pure black.
-const INK_R = 10;
-const INK_G = 0;
-const INK_B = 20;
+const SIGMA = SPLAT_R * 0.5 + 0.4;
+const BLOOM = device.pick(5, 9); // glow blur radius in px
 
 // ---- simulation buffers (rebuilt on resize) ----
 let gw = 0;
@@ -75,7 +71,7 @@ const view = createCanvas(canvas, { onResize: build });
 const ctx = view.ctx;
 
 // ---- controls (set targets directly; fluid params are not jarring) ----
-let flow = 1.0; // velocity injection scale
+let flow = 2.0; // velocity injection scale
 let dyeFade = 0.985; // per-frame dye multiply (slow trail fade)
 let hueSpeed = 0.8; // degrees per frame the injected hue rotates
 let hue = Math.random() * 360;
@@ -111,12 +107,13 @@ function inject() {
   const cb = rgb[2];
 
   const speed = Math.hypot(dvx, dvy);
-  const dyeAmt = 0.1 + Math.min(speed * 0.5, 0.7);
+  const dyeAmt = 0.2 + Math.min(speed * 0.9, 1.4);
   const pouring = pointer.down;
 
   const cx = Math.round(gxf);
   const cy = Math.round(gyf);
   const twoSig2 = 2 * SIGMA * SIGMA;
+  const FORCE = 3; // base amplifier so dragging really shoves the fluid
 
   for (let oy = -SPLAT_R; oy <= SPLAT_R; oy++) {
     const gy = cy + oy;
@@ -126,9 +123,14 @@ function inject() {
       if (gx < 1 || gx >= gw - 1) continue;
       const fall = Math.exp(-(ox * ox + oy * oy) / twoSig2);
       const id = gx + gy * gw;
-      vx[id] += dvx * flow * fall;
-      vy[id] += dvy * flow * fall;
-      const amt = (pouring ? dyeAmt * 3 + 0.5 : dyeAmt) * fall;
+      vx[id] += dvx * flow * FORCE * fall;
+      vy[id] += dvy * flow * FORCE * fall;
+      if (pouring) {
+        // pour also shoves fluid radially outward from the point
+        vx[id] += ox * 0.9 * fall;
+        vy[id] += oy * 0.9 * fall;
+      }
+      const amt = (pouring ? dyeAmt * 4 + 0.8 : dyeAmt) * fall;
       dr[id] += cr * amt;
       dg[id] += cg * amt;
       db[id] += cb * amt;
@@ -219,9 +221,9 @@ function render() {
   const n = gw * gh;
   const data = offData;
   for (let i = 0; i < n; i++) {
-    let R = INK_R + dr[i] * 255;
-    let G = INK_G + dg[i] * 255;
-    let B = INK_B + db[i] * 255;
+    let R = dr[i] * 255;
+    let G = dg[i] * 255;
+    let B = db[i] * 255;
     if (R > 255) R = 255;
     if (G > 255) G = 255;
     if (B > 255) B = 255;
@@ -234,14 +236,23 @@ function render() {
 
   const W = view.W;
   const H = view.H;
+
+  // solid dark ink background
   ctx.globalCompositeOperation = 'source-over';
+  ctx.filter = 'none';
+  ctx.fillStyle = '#0a0014';
+  ctx.fillRect(0, 0, W, H);
+
+  // glowing dye added over the background
   ctx.imageSmoothingEnabled = true;
+  ctx.globalCompositeOperation = 'lighter';
   ctx.drawImage(off, 0, 0, W, H);
 
-  // Cheap bloom: one extra additive, slightly enlarged draw for a soft halo.
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha = 0.35;
-  ctx.drawImage(off, -W * 0.012, -H * 0.012, W * 1.024, H * 1.024);
+  // soft bloom: a blurred additive pass for the glow
+  ctx.filter = `blur(${BLOOM}px)`;
+  ctx.globalAlpha = 0.6;
+  ctx.drawImage(off, 0, 0, W, H);
+  ctx.filter = 'none';
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
 }
