@@ -35,6 +35,11 @@ body {
 body.toy {
   overflow: hidden;
   cursor: crosshair;
+  /* No text selection or iOS long-press callout/magnifier while playing.
+     Invisible to desktop mouse use; the real win is on touch. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 canvas {

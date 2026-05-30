@@ -11,33 +11,50 @@ const view = createCanvas(canvas);
 const ctx = view.ctx;
 
 // pointer.active = attract (mouse hover / one finger).
-// pointer.down   = scatter (mouse button / two-finger hold).
+// pointer.down   = scatter (mouse button / touch long-press).
 const pointer = createPointer(canvas);
+
+// Mobile-only zoom-out: run the sim in a larger virtual world and draw it
+// scaled to fit, so more of the flock fits on a small screen. Particle line
+// width and streak length stay in screen pixels (see draw), so particles keep
+// their size instead of shrinking to specks. ZOOM = 1 on desktop makes every
+// expression below identical to the original math.
+const ZOOM = device.touchPrimary ? 0.7 : 1;
 
 // Dialed-down defaults on phones / low-power devices, not shrunk desktop ones.
 const COUNT_DEFAULT = device.pick(900, 2200);
 const COUNT_MAX = device.pick(2800, 5000);
 
-// boid array stored as flat typed arrays for speed
-let N = COUNT_DEFAULT;
-let px, py, vx, vy;
+// boid array stored as flat typed arrays for speed. Allocated once at the max
+// so the flock count can ease up and down without reallocating.
+const CAP = COUNT_MAX;
+const px = new Float32Array(CAP);
+const py = new Float32Array(CAP);
+const vx = new Float32Array(CAP);
+const vy = new Float32Array(CAP);
 
-function initBoids(n) {
-  N = n;
-  px = new Float32Array(N);
-  py = new Float32Array(N);
-  vx = new Float32Array(N);
-  vy = new Float32Array(N);
-  for (let i = 0; i < N; i++) {
-    px[i] = Math.random() * view.W;
-    py[i] = Math.random() * view.H;
-    const a = Math.random() * Math.PI * 2;
-    const s = 0.5 + Math.random();
-    vx[i] = Math.cos(a) * s;
-    vy[i] = Math.sin(a) * s;
-  }
+function spawn(i) {
+  px[i] = Math.random() * (view.W / ZOOM);
+  py[i] = Math.random() * (view.H / ZOOM);
+  const a = Math.random() * Math.PI * 2;
+  const s = 0.5 + Math.random();
+  vx[i] = Math.cos(a) * s;
+  vy[i] = Math.sin(a) * s;
 }
-initBoids(N);
+for (let i = 0; i < CAP; i++) spawn(i);
+
+// Live (eased) values and their slider targets.
+let count = COUNT_DEFAULT; // active boids this frame
+let countF = COUNT_DEFAULT; // eased float toward targetCount
+let targetCount = COUNT_DEFAULT;
+
+let trailAlpha = 0.1;
+let targetTrail = 0.1;
+
+let chaos = 0.5;
+let targetChaos = 0.5;
+
+const EASE = 0.1; // per-frame lerp toward slider targets
 
 // spatial grid for neighbor lookups
 const CELL = 60;
@@ -46,21 +63,33 @@ function key(cx, cy) {
   return cx * 100000 + cy;
 }
 
-let trailAlpha = 0.1;
-let chaos = 0.5;
 let hueShift = 0;
 
 const MAX_SPEED = 3.4;
 const NEIGHBOR = 42;
 const NEIGHBOR2 = NEIGHBOR * NEIGHBOR;
 
+function easeControls() {
+  trailAlpha += (targetTrail - trailAlpha) * EASE;
+  chaos += (targetChaos - chaos) * EASE;
+
+  countF += (targetCount - countF) * EASE;
+  // Snap the last fraction so we actually reach the target.
+  if (Math.abs(targetCount - countF) < 1) countF = targetCount;
+  const nc = Math.round(countF);
+  if (nc > count) {
+    for (let i = count; i < nc; i++) spawn(i); // fresh boids join gradually
+  }
+  count = nc;
+}
+
 function step() {
-  const W = view.W;
-  const H = view.H;
+  const WW = view.W / ZOOM;
+  const HH = view.H / ZOOM;
 
   // rebuild grid
   grid.clear();
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < count; i++) {
     const cx = Math.floor(px[i] / CELL);
     const cy = Math.floor(py[i] / CELL);
     const k = key(cx, cy);
@@ -72,7 +101,7 @@ function step() {
     arr.push(i);
   }
 
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < count; i++) {
     const x = px[i];
     const y = py[i];
     let ax = 0;
@@ -81,7 +110,7 @@ function step() {
     let cys = 0; // cohesion
     let sx = 0;
     let sy = 0; // separation
-    let count = 0;
+    let neighbors = 0;
 
     const gx = Math.floor(x / CELL);
     const gy = Math.floor(y / CELL);
@@ -104,7 +133,7 @@ function step() {
             const inv = 1 / d2;
             sx -= dx * inv * 60;
             sy -= dy * inv * 60;
-            count++;
+            neighbors++;
           }
         }
       }
@@ -112,15 +141,15 @@ function step() {
 
     let fx = 0;
     let fy = 0;
-    if (count > 0) {
-      ax /= count;
-      ay /= count;
+    if (neighbors > 0) {
+      ax /= neighbors;
+      ay /= neighbors;
       const al = Math.hypot(ax, ay) || 1;
       fx += (ax / al) * 0.55;
       fy += (ay / al) * 0.55;
 
-      cxs = cxs / count - x;
-      cys = cys / count - y;
+      cxs = cxs / neighbors - x;
+      cys = cys / neighbors - y;
       const cl = Math.hypot(cxs, cys) || 1;
       fx += (cxs / cl) * 0.25;
       fy += (cys / cl) * 0.25;
@@ -129,9 +158,14 @@ function step() {
       fy += sy * 0.02;
     }
 
-    // pointer interaction: attract toward, scatter away
-    const mdx = pointer.x - x;
-    const mdy = pointer.y - y;
+    // pointer interaction: attract toward, scatter away. Distances are measured
+    // in screen pixels (positions scaled by ZOOM) so the interaction radius
+    // feels the same regardless of the mobile zoom-out. Direction is a unit
+    // vector, so it is identical in world and screen space.
+    const sxp = x * ZOOM;
+    const syp = y * ZOOM;
+    const mdx = pointer.x - sxp;
+    const mdy = pointer.y - syp;
     const md = Math.hypot(mdx, mdy) || 1;
     if (pointer.active) {
       if (pointer.down) {
@@ -165,11 +199,11 @@ function step() {
     px[i] += vx[i];
     py[i] += vy[i];
 
-    // wrap edges
-    if (px[i] < -5) px[i] = W + 5;
-    else if (px[i] > W + 5) px[i] = -5;
-    if (py[i] < -5) py[i] = H + 5;
-    else if (py[i] > H + 5) py[i] = -5;
+    // wrap edges (world space)
+    if (px[i] < -5) px[i] = WW + 5;
+    else if (px[i] > WW + 5) px[i] = -5;
+    if (py[i] < -5) py[i] = HH + 5;
+    else if (py[i] > HH + 5) py[i] = -5;
   }
 }
 
@@ -185,24 +219,27 @@ function draw() {
   ctx.globalCompositeOperation = 'lighter';
   hueShift = (hueShift + 0.3) % 360;
 
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < count; i++) {
     const sp = Math.hypot(vx[i], vy[i]);
     const hue = ((sp / MAX_SPEED) * 200 + hueShift + (px[i] + py[i]) * 0.05) % 360;
-    const len = 2 + sp * 2.5;
+    const len = 2 + sp * 2.5; // streak length kept in screen px (constant size)
     const a = Math.atan2(vy[i], vx[i]);
-    const tx = px[i] - Math.cos(a) * len;
-    const ty = py[i] - Math.sin(a) * len;
+
+    // world -> screen for position; streak drawn in screen px.
+    const sX = px[i] * ZOOM;
+    const sY = py[i] * ZOOM;
 
     ctx.strokeStyle = `hsla(${hue}, 100%, 62%, 0.9)`;
     ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.moveTo(px[i], py[i]);
-    ctx.lineTo(tx, ty);
+    ctx.moveTo(sX, sY);
+    ctx.lineTo(sX - Math.cos(a) * len, sY - Math.sin(a) * len);
     ctx.stroke();
   }
 }
 
 function loop() {
+  easeControls();
   step();
   draw();
   requestAnimationFrame(loop);
@@ -213,7 +250,7 @@ loop();
 
 const hintEl = document.getElementById('hint');
 hintEl.textContent = device.touchPrimary
-  ? 'one finger follows · two fingers scatter'
+  ? 'hold to scatter'
   : 'move · hold to scatter';
 
 // fade the hint after the first interaction
@@ -228,6 +265,12 @@ function fadeHint() {
 canvas.addEventListener('pointermove', fadeHint, { once: true });
 canvas.addEventListener('pointerdown', fadeHint, { once: true });
 
+// Touch only: kill the long-press context menu so scatter never pops a menu.
+// Desktop right-click is left untouched.
+if (device.touchPrimary) {
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
 // ---- controls ----
 
 const countEl = document.getElementById('count');
@@ -239,15 +282,16 @@ countEl.max = String(COUNT_MAX);
 countEl.value = String(COUNT_DEFAULT);
 document.getElementById('vCount').textContent = String(COUNT_DEFAULT);
 
+// Sliders set targets; the toy eases toward them each frame (see easeControls).
 countEl.addEventListener('input', (e) => {
   document.getElementById('vCount').textContent = e.target.value;
-  initBoids(parseInt(e.target.value, 10));
+  targetCount = parseInt(e.target.value, 10);
 });
 trailEl.addEventListener('input', (e) => {
-  trailAlpha = parseInt(e.target.value, 10) / 100;
-  document.getElementById('vTrail').textContent = trailAlpha.toFixed(2);
+  targetTrail = parseInt(e.target.value, 10) / 100;
+  document.getElementById('vTrail').textContent = targetTrail.toFixed(2);
 });
 chaosEl.addEventListener('input', (e) => {
-  chaos = parseInt(e.target.value, 10) / 100;
-  document.getElementById('vChaos').textContent = chaos.toFixed(2);
+  targetChaos = parseInt(e.target.value, 10) / 100;
+  document.getElementById('vChaos').textContent = targetChaos.toFixed(2);
 });

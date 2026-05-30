@@ -7,9 +7,15 @@
 //   state.active       interacting at all (mouse over, or a finger down)
 //   state.down         secondary "press" gesture
 //                        - mouse:  a button is held
-//                        - touch:  two or more fingers are down (two-finger hold)
+//                        - touch:  a long-press (hold roughly in place) is held.
+//                          Once engaged it stays down until release, and the
+//                          finger can drag the point around (mirrors a desktop
+//                          press-and-move). A quick tap or a drag never engages.
 //   state.count        number of active pointers (fingers); mouse: 1 while held
 //   state.isTouch      last interaction came from touch/pen, not mouse
+
+const LONGPRESS_MS = 350; // hold this long to engage the touch "press"
+const MOVE_TOL = 12; // px of travel before a hold is treated as a drag instead
 
 export function createPointer(target) {
   const state = {
@@ -22,6 +28,21 @@ export function createPointer(target) {
   };
 
   const points = new Map(); // pointerId -> { x, y }
+
+  // Long-press tracking (touch only).
+  let lpTimer = null;
+  let lpStartX = 0;
+  let lpStartY = 0;
+  let lpEngaged = false;
+
+  function cancelLongPress() {
+    if (lpTimer !== null) {
+      clearTimeout(lpTimer);
+      lpTimer = null;
+    }
+    lpEngaged = false;
+    state.down = false;
+  }
 
   function recompute() {
     state.count = points.size;
@@ -42,10 +63,30 @@ export function createPointer(target) {
     points.set(e.pointerId, { x: e.clientX, y: e.clientY });
     recompute();
     state.active = true;
-    // Mouse: a held button is the "press". Touch: pressing comes from a second
-    // finger, handled via state.count below.
-    state.down = state.isTouch ? points.size >= 2 : true;
-    if (e.pointerType !== 'mouse' && e.cancelable) e.preventDefault();
+
+    if (!state.isTouch) {
+      // Mouse: a held button is the press. Unchanged from before.
+      state.down = true;
+    } else if (points.size === 1) {
+      // Touch: start the long-press timer. Engages only if the finger stays
+      // roughly still for LONGPRESS_MS.
+      lpStartX = e.clientX;
+      lpStartY = e.clientY;
+      lpEngaged = false;
+      if (lpTimer !== null) clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => {
+        lpTimer = null;
+        if (points.size === 1) {
+          state.down = true;
+          lpEngaged = true;
+        }
+      }, LONGPRESS_MS);
+    } else {
+      // A second finger landed: ambiguous, so no scatter.
+      cancelLongPress();
+    }
+
+    if (state.isTouch && e.cancelable) e.preventDefault();
   }
 
   function onMove(e) {
@@ -53,13 +94,24 @@ export function createPointer(target) {
     if (points.has(e.pointerId)) {
       points.set(e.pointerId, { x: e.clientX, y: e.clientY });
       recompute();
+      // Before the hold engages, too much travel means it is a drag, not a
+      // hold, so it should never scatter. After it engages, the finger is free
+      // to drag the scatter point around.
+      if (state.isTouch && !lpEngaged && points.size === 1 && lpTimer !== null) {
+        const dx = e.clientX - lpStartX;
+        const dy = e.clientY - lpStartY;
+        if (dx * dx + dy * dy > MOVE_TOL * MOVE_TOL) {
+          clearTimeout(lpTimer);
+          lpTimer = null;
+        }
+      }
     } else if (e.pointerType === 'mouse') {
       // Hover with no button held still attracts.
       state.x = e.clientX;
       state.y = e.clientY;
       state.active = true;
     }
-    if (e.pointerType !== 'mouse' && e.cancelable) e.preventDefault();
+    if (state.isTouch && e.cancelable) e.preventDefault();
   }
 
   function onUp(e) {
@@ -68,7 +120,7 @@ export function createPointer(target) {
     if (e.pointerType === 'mouse') {
       state.down = false;
     } else {
-      state.down = points.size >= 2;
+      cancelLongPress();
       if (points.size === 0) state.active = false;
     }
   }
@@ -87,6 +139,7 @@ export function createPointer(target) {
   target.addEventListener('pointerleave', onLeave);
 
   state.destroy = () => {
+    cancelLongPress();
     target.removeEventListener('pointerdown', onDown);
     target.removeEventListener('pointermove', onMove);
     window.removeEventListener('pointerup', onUp);
