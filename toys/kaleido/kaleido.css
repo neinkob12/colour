@@ -1,0 +1,7 @@
+/* Kaleido-specific overrides. Most styling comes from base.css.
+   Leans cyan + violet for a glassy, mirrored feel. */
+
+:root {
+  --glow: #00f0ff;
+  --glow2: #b14bff;
+}
