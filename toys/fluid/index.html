@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Fluid — stir glowing ink that bleeds and mixes where currents collide." />
+    <title>fluid · colour</title>
+  </head>
+  <body class="toy">
+    <canvas id="c"></canvas>
+
+    <a class="back" href="/">&larr; index</a>
+
+    <div class="hud">
+      <div class="title">fluid</div>
+      <div class="sub">stir the ink</div>
+    </div>
+
+    <div class="hint" id="hint">drag to stir &middot; hold to pour</div>
+
+    <div class="panel">
+      <div class="ctrl">
+        <label>flow <span id="vFlow">1.00</span></label>
+        <input type="range" id="flow" min="10" max="300" value="100" step="5" />
+      </div>
+      <div class="ctrl">
+        <label>fade <span id="vFade">0.015</span></label>
+        <input type="range" id="fade" min="1" max="60" value="15" step="1" />
+      </div>
+      <div class="ctrl">
+        <label>hue <span id="vHue">0.80</span></label>
+        <input type="range" id="hue" min="0" max="200" value="80" step="1" />
+      </div>
+    </div>
+
+    <script type="module" src="./fluid.js"></script>
+  </body>
+</html>

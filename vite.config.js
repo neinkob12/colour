@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         swarm: fileURLToPath(new URL('./toys/swarm/index.html', import.meta.url)),
+        fluid: fileURLToPath(new URL('./toys/fluid/index.html', import.meta.url)),
       },
     },
   },

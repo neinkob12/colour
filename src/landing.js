@@ -5,7 +5,7 @@ import './styles/landing.css';
 // Flip ready to true and add the href when a toy ships in its phase.
 const TOYS = [
   { n: '01', name: 'swarm', tag: 'it follows you', accent: 'var(--glow)', href: '/toys/swarm/', ready: true },
-  { n: '02', name: 'fluid', tag: 'stir the ink', accent: 'var(--glow2)', ready: false },
+  { n: '02', name: 'fluid', tag: 'stir the ink', accent: 'var(--glow2)', href: '/toys/fluid/', ready: true },
   { n: '03', name: 'warp', tag: 'bend the field', accent: 'var(--glow3)', ready: false },
   { n: '04', name: 'bloom', tag: 'tap to grow', accent: 'var(--glow)', ready: false },
   { n: '05', name: 'kaleido', tag: 'mirror world', accent: 'var(--glow2)', ready: false },

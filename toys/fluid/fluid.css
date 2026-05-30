@@ -1,0 +1,7 @@
+/* Fluid-specific overrides. Most styling comes from base.css.
+   Leans cyan + violet to read distinctly from Swarm while staying cohesive. */
+
+:root {
+  --glow: #b14bff;
+  --glow2: #00f0ff;
+}
