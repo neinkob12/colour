@@ -1,0 +1,7 @@
+/* Warp-specific overrides. Most styling comes from base.css.
+   Leans violet + magenta to read distinctly while staying cohesive. */
+
+:root {
+  --glow: #ff2fb9;
+  --glow2: #b14bff;
+}

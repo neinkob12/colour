@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Warp — bend a field of particles with gravity wells and rippling explosions." />
+    <title>warp · colour</title>
+  </head>
+  <body class="toy">
+    <canvas id="c"></canvas>
+
+    <a class="back" href="/">&larr; index</a>
+
+    <div class="hud">
+      <div class="title">warp</div>
+      <div class="sub">bend the field</div>
+    </div>
+
+    <div class="hint" id="hint">drag to warp &middot; hold to blast</div>
+
+    <div class="panel">
+      <div class="ctrl">
+        <label>grid <span id="vGrid">60</span></label>
+        <input type="range" id="grid" min="12" max="90" value="60" step="2" />
+      </div>
+      <div class="ctrl">
+        <label>pull <span id="vPull">3.0</span></label>
+        <input type="range" id="pull" min="0" max="100" value="50" step="1" />
+      </div>
+      <div class="ctrl">
+        <label>blast <span id="vBlast">8.0</span></label>
+        <input type="range" id="blast" min="0" max="100" value="50" step="1" />
+      </div>
+    </div>
+
+    <script type="module" src="./warp.js"></script>
+  </body>
+</html>

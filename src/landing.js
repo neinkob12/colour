@@ -6,7 +6,7 @@ import './styles/landing.css';
 const TOYS = [
   { n: '01', name: 'swarm', tag: 'it follows you', accent: 'var(--glow)', href: '/toys/swarm/', ready: true },
   { n: '02', name: 'fluid', tag: 'stir the ink', accent: 'var(--glow2)', href: '/toys/fluid/', ready: true },
-  { n: '03', name: 'warp', tag: 'bend the field', accent: 'var(--glow3)', ready: false },
+  { n: '03', name: 'warp', tag: 'bend the field', accent: 'var(--glow3)', href: '/toys/warp/', ready: true },
   { n: '04', name: 'bloom', tag: 'tap to grow', accent: 'var(--glow)', ready: false },
   { n: '05', name: 'kaleido', tag: 'mirror world', accent: 'var(--glow2)', ready: false },
   { n: '06', name: 'bounce', tag: 'launch & collide', accent: 'var(--glow3)', ready: false },
