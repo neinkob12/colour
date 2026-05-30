@@ -11,6 +11,7 @@ export default defineConfig({
         swarm: fileURLToPath(new URL('./toys/swarm/index.html', import.meta.url)),
         fluid: fileURLToPath(new URL('./toys/fluid/index.html', import.meta.url)),
         warp: fileURLToPath(new URL('./toys/warp/index.html', import.meta.url)),
+        bloom: fileURLToPath(new URL('./toys/bloom/index.html', import.meta.url)),
       },
     },
   },

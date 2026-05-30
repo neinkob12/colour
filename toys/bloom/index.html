@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Bloom — tap to drop blooming flowers and ripples that layer into a composition." />
+    <title>bloom · colour</title>
+  </head>
+  <body class="toy">
+    <canvas id="c"></canvas>
+
+    <a class="back" href="/">&larr; index</a>
+
+    <div class="hud">
+      <div class="title">bloom</div>
+      <div class="sub">tap to grow</div>
+    </div>
+
+    <div class="hint" id="hint">tap or drag to bloom &middot; hold to pile</div>
+
+    <div class="panel">
+      <div class="ctrl">
+        <label>size <span id="vSize">1.0</span></label>
+        <input type="range" id="size" min="20" max="220" value="100" step="5" />
+      </div>
+      <div class="ctrl">
+        <label>rate <span id="vRate">50</span></label>
+        <input type="range" id="rate" min="1" max="100" value="50" step="1" />
+      </div>
+      <div class="ctrl">
+        <label>fade <span id="vFade">0</span></label>
+        <input type="range" id="fade" min="0" max="40" value="0" step="1" />
+      </div>
+    </div>
+
+    <script type="module" src="./bloom.js"></script>
+  </body>
+</html>
