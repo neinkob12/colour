@@ -1,0 +1,7 @@
+/* Bounce-specific overrides. Most styling comes from base.css.
+   Leans magenta + cyan, bright bouncing light on near-black. */
+
+:root {
+  --glow: #ff2fb9;
+  --glow2: #00f0ff;
+}

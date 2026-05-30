@@ -9,7 +9,7 @@ const TOYS = [
   { n: '03', name: 'warp', tag: 'bend the field', accent: 'var(--glow3)', href: '/toys/warp/', ready: true },
   { n: '04', name: 'bloom', tag: 'tap to grow', accent: 'var(--glow)', href: '/toys/bloom/', ready: true },
   { n: '05', name: 'kaleido', tag: 'mirror world', accent: 'var(--glow2)', href: '/toys/kaleido/', ready: true },
-  { n: '06', name: 'bounce', tag: 'launch & collide', accent: 'var(--glow3)', ready: false },
+  { n: '06', name: 'bounce', tag: 'launch & collide', accent: 'var(--glow3)', href: '/toys/bounce/', ready: true },
 ];
 
 const grid = document.getElementById('grid');

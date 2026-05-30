@@ -13,6 +13,7 @@ export default defineConfig({
         warp: fileURLToPath(new URL('./toys/warp/index.html', import.meta.url)),
         bloom: fileURLToPath(new URL('./toys/bloom/index.html', import.meta.url)),
         kaleido: fileURLToPath(new URL('./toys/kaleido/index.html', import.meta.url)),
+        bounce: fileURLToPath(new URL('./toys/bounce/index.html', import.meta.url)),
       },
     },
   },

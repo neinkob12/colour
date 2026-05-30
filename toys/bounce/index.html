@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Bounce — fling glowing balls that bounce, collide, and leave light trails." />
+    <title>bounce · colour</title>
+  </head>
+  <body class="toy">
+    <canvas id="c"></canvas>
+
+    <a class="back" href="/">&larr; index</a>
+
+    <div class="hud">
+      <div class="title">bounce</div>
+      <div class="sub">launch &amp; collide</div>
+    </div>
+
+    <div class="hint" id="hint">drag to launch</div>
+
+    <div class="panel">
+      <div class="ctrl">
+        <label>gravity <span id="vGrav">0.24</span></label>
+        <input type="range" id="grav" min="0" max="100" value="40" step="1" />
+      </div>
+      <div class="ctrl">
+        <label>bounce <span id="vBounce">0.95</span></label>
+        <input type="range" id="bounce" min="0" max="100" value="90" step="1" />
+      </div>
+      <div class="ctrl">
+        <label>trail <span id="vTrail">0.10</span></label>
+        <input type="range" id="trail" min="2" max="40" value="10" step="1" />
+      </div>
+    </div>
+
+    <script type="module" src="./bounce.js"></script>
+  </body>
+</html>
