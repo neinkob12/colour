@@ -4,11 +4,11 @@ import { createCanvas } from '../../src/lib/canvas.js';
 import { createPointer } from '../../src/lib/pointer.js';
 import { detectDevice } from '../../src/lib/device.js';
 
-// "Click-to-bloom": each tap drops a blooming flower or an expanding ripple.
-// Blooms animate on a live layer; when one finishes growing it is baked into an
-// offscreen composition canvas, so taps accumulate into a lasting, layered
-// painting rather than fading away. Drag to paint a ribbon of blooms, hold to
-// pile them up.
+// "Click-to-bloom": each tap drops a Flower-of-Life motif (an overlapping-circle
+// sacred-geometry lattice). Blooms animate on a live layer; when one finishes
+// growing it is baked into an offscreen composition canvas, so taps accumulate
+// into a lasting, layered painting. Drag to paint a ribbon of motifs, hold to
+// pile them up. The composition can slowly fade over time (fade control).
 
 const device = detectDevice();
 
@@ -42,8 +42,28 @@ const bhue = new Float32Array(POOL);
 const brot = new Float32Array(POOL);
 const bspin = new Float32Array(POOL);
 const balpha = new Float32Array(POOL);
-const bpetals = new Uint8Array(POOL);
-const btype = new Uint8Array(POOL); // 0 flower, 1 ripple
+
+// Flower of Life lattice: triangular-lattice centers within 2 units of the
+// origin (the classic 19-circle motif), in units of one circle radius. The
+// petal/vesica pattern is formed purely by these overlapping circles; no outer
+// bounding circle is ever drawn.
+const LOX = [];
+const LOY = [];
+const LDIST = [];
+(() => {
+  const h = Math.sqrt(3) / 2;
+  for (let j = -3; j <= 3; j++) {
+    for (let i = -3; i <= 3; i++) {
+      const x = i + j * 0.5;
+      const y = j * h;
+      if (x * x + y * y <= 4.0001) {
+        LOX.push(x);
+        LOY.push(y);
+        LDIST.push(Math.sqrt(x * x + y * y));
+      }
+    }
+  }
+})();
 
 const active = []; // indices currently animating
 const free = [];
@@ -52,8 +72,25 @@ for (let k = 0; k < POOL; k++) free.push(k);
 // ---- controls ----
 let sizeScale = 1.0;
 let rate = 50;
-let compFade = 0; // 0 = keep forever
 const SIZE_BASE = device.pick(46, 64);
+
+// Time-based exponential fade so decay is framerate-independent and reads as a
+// smooth, slow decay. The slider maps to a half-life (30s slow .. 1.5s quick);
+// 0 means never fade.
+let fadeK = 0; // decay rate (1/s)
+let lastT = performance.now();
+function setFade(v) {
+  const label = document.getElementById('vFade');
+  if (v <= 0) {
+    fadeK = 0;
+    label.textContent = 'off';
+  } else {
+    const halfLife = 30 * Math.pow(0.05, (v - 1) / 39);
+    fadeK = Math.LN2 / halfLife;
+    label.textContent = halfLife.toFixed(1) + 's';
+  }
+}
+setFade(12);
 
 let baseHue = Math.random() * 360;
 
@@ -75,46 +112,29 @@ function spawnBloom(px, py) {
   brot[idx] = Math.random() * Math.PI * 2;
   bspin[idx] = (Math.random() - 0.5) * 0.8;
   balpha[idx] = 0.5;
-  bpetals[idx] = 5 + ((Math.random() * 4) | 0);
-  btype[idx] = Math.random() < 0.62 ? 0 : 1;
   active.push(idx);
 }
 
 function drawBloom(c, idx, prog) {
   const ease = 1 - Math.pow(1 - prog, 3); // easeOutCubic
-  const R = bmax[idx] * ease;
+  const r = bmax[idx] * ease * 0.3; // circle radius; the motif spans ~4r
+  if (r < 0.4) {
+    return;
+  }
   const a = balpha[idx];
   c.save();
   c.translate(bx[idx], by[idx]);
   c.rotate(brot[idx] + prog * bspin[idx]);
   c.globalCompositeOperation = 'lighter';
+  c.lineWidth = Math.max(1, r * 0.07);
 
-  if (btype[idx] === 0) {
-    // flower: radiating petals + bright core
-    const petals = bpetals[idx];
-    for (let p = 0; p < petals; p++) {
-      const ang = (p / petals) * Math.PI * 2;
-      const hue = (bhue[idx] + p * 4) % 360;
-      c.fillStyle = `hsla(${hue}, 100%, 62%, ${a})`;
-      c.beginPath();
-      c.ellipse(Math.cos(ang) * R * 0.5, Math.sin(ang) * R * 0.5, R * 0.5, R * 0.22, ang, 0, Math.PI * 2);
-      c.fill();
-    }
-    c.fillStyle = `hsla(${bhue[idx]}, 100%, 82%, ${a})`;
+  // Flower of Life: overlapping circles whose vesica overlaps form the petal
+  // lattice. Hue drifts outward by ring. No outer bounding circle.
+  for (let p = 0; p < LOX.length; p++) {
+    const hue = (bhue[idx] + LDIST[p] * 26) % 360;
+    c.strokeStyle = `hsla(${hue}, 100%, 64%, ${a})`;
     c.beginPath();
-    c.arc(0, 0, R * 0.18, 0, Math.PI * 2);
-    c.fill();
-  } else {
-    // ripple: a couple of expanding rings
-    c.lineWidth = Math.max(1, R * 0.08);
-    c.strokeStyle = `hsla(${bhue[idx]}, 100%, 62%, ${a})`;
-    c.beginPath();
-    c.arc(0, 0, R, 0, Math.PI * 2);
-    c.stroke();
-    c.lineWidth = Math.max(1, R * 0.045);
-    c.strokeStyle = `hsla(${(bhue[idx] + 40) % 360}, 100%, 72%, ${a * 0.7})`;
-    c.beginPath();
-    c.arc(0, 0, R * 0.62, 0, Math.PI * 2);
+    c.arc(LOX[p] * r, LOY[p] * r, r, 0, Math.PI * 2);
     c.stroke();
   }
   c.restore();
@@ -165,6 +185,11 @@ function spawnDuringInteraction() {
 }
 
 function frame() {
+  const now = performance.now();
+  let dt = (now - lastT) / 1000;
+  lastT = now;
+  if (dt > 0.05) dt = 0.05; // clamp big gaps (e.g. returning to a backgrounded tab)
+
   baseHue = (baseHue + 0.4) % 360;
   spawnDuringInteraction();
 
@@ -190,10 +215,11 @@ function frame() {
   }
   active.length = w;
 
-  // optional slow fade of the composition so it can stay fresh
-  if (compFade > 0) {
+  // time-based exponential fade of the composition (framerate-independent)
+  if (fadeK > 0) {
+    const alpha = 1 - Math.exp(-fadeK * dt);
     compCtx.globalCompositeOperation = 'source-over';
-    compCtx.fillStyle = `rgba(10, 0, 20, ${compFade / 1000})`;
+    compCtx.fillStyle = `rgba(10, 0, 20, ${alpha})`;
     compCtx.fillRect(0, 0, view.W, view.H);
   }
 
@@ -237,6 +263,5 @@ rateEl.addEventListener('input', (e) => {
   document.getElementById('vRate').textContent = String(rate);
 });
 fadeEl.addEventListener('input', (e) => {
-  compFade = parseInt(e.target.value, 10);
-  document.getElementById('vFade').textContent = String(compFade);
+  setFade(parseInt(e.target.value, 10));
 });
