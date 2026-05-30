@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Swarm — flocking boids that chase your cursor and scatter when you press." />
+    <title>swarm · colour</title>
+  </head>
+  <body class="toy">
+    <canvas id="c"></canvas>
+
+    <a class="back" href="/">&larr; index</a>
+
+    <div class="hud">
+      <div class="title">swarm</div>
+      <div class="sub">it follows you</div>
+    </div>
+
+    <div class="hint" id="hint">move &middot; hold to scatter</div>
+
+    <div class="panel">
+      <div class="ctrl">
+        <label>flock <span id="vCount">2200</span></label>
+        <input type="range" id="count" min="400" max="5000" value="2200" step="100" />
+      </div>
+      <div class="ctrl">
+        <label>trail <span id="vTrail">0.10</span></label>
+        <input type="range" id="trail" min="2" max="40" value="10" step="1" />
+      </div>
+      <div class="ctrl">
+        <label>chaos <span id="vChaos">0.50</span></label>
+        <input type="range" id="chaos" min="0" max="100" value="50" step="1" />
+      </div>
+    </div>
+
+    <script type="module" src="./swarm.js"></script>
+  </body>
+</html>

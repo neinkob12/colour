@@ -1,0 +1,187 @@
+/* Landing page: a grid of six toy cards over a slow psychedelic gradient. */
+
+body.landing {
+  min-height: 100%;
+  overflow-x: hidden;
+  cursor: default;
+  position: relative;
+}
+
+/* Drifting glow field behind everything. Pure CSS so it costs almost nothing. */
+body.landing::before {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  background:
+    radial-gradient(40% 40% at 20% 25%, rgba(255, 47, 185, 0.28), transparent 70%),
+    radial-gradient(45% 45% at 80% 20%, rgba(0, 240, 255, 0.22), transparent 70%),
+    radial-gradient(50% 50% at 60% 85%, rgba(177, 75, 255, 0.26), transparent 70%),
+    radial-gradient(35% 35% at 15% 80%, rgba(0, 240, 255, 0.18), transparent 70%);
+  filter: blur(20px);
+  animation: drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1.05) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(4%, 3%, 0) scale(1.15) rotate(8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.landing::before {
+    animation: none;
+  }
+}
+
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(48px, 9vh, 110px) clamp(20px, 5vw, 48px) 80px;
+}
+
+.masthead {
+  margin-bottom: clamp(40px, 7vh, 80px);
+}
+
+.masthead h1 {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 13vw, 8rem);
+  letter-spacing: 0.12em;
+  line-height: 0.85;
+  background: linear-gradient(100deg, var(--glow), var(--glow3), var(--glow2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 32px rgba(255, 47, 185, 0.35));
+}
+
+.masthead p {
+  margin-top: 18px;
+  max-width: 46ch;
+  font-size: clamp(0.8rem, 2.4vw, 0.95rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  line-height: 1.7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: clamp(16px, 2.4vw, 26px);
+}
+
+.card {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 26px 24px 22px;
+  min-height: 180px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.35s ease, box-shadow 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Color accent strip per card, driven by --accent. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, var(--accent, var(--glow)), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.card .num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  opacity: 0.5;
+}
+
+.card .name {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  margin-top: auto;
+  color: var(--white);
+}
+
+.card .tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-top: 8px;
+  opacity: 0.65;
+}
+
+/* Live, clickable cards. */
+.card.live {
+  cursor: pointer;
+}
+.card.live:hover,
+.card.live:focus-visible {
+  transform: translateY(-6px);
+  border-color: transparent;
+  box-shadow: 0 18px 50px -18px var(--accent, var(--glow)),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+.card.live:hover::before,
+.card.live:focus-visible::before {
+  opacity: 1;
+}
+.card.live .name {
+  text-shadow: 0 0 26px color-mix(in srgb, var(--accent, var(--glow)) 70%, transparent);
+}
+
+/* Coming-soon cards: dimmed, non-interactive, with a badge. */
+.card.soon {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.card.soon .name {
+  opacity: 0.7;
+}
+.card.soon .badge {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  opacity: 0.8;
+}
+
+.footer {
+  margin-top: 56px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  opacity: 0.4;
+}
