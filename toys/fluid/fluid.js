@@ -72,7 +72,7 @@ const ctx = view.ctx;
 
 // ---- controls (set targets directly; fluid params are not jarring) ----
 let flow = 2.0; // velocity injection scale
-let dyeFade = 0.985; // per-frame dye multiply (slow trail fade)
+let dyeFade = 0.992; // per-frame dye multiply (slow trail fade)
 let hueSpeed = 0.8; // degrees per frame the injected hue rotates
 let hue = Math.random() * 360;
 
@@ -126,11 +126,11 @@ function inject() {
       vx[id] += dvx * flow * FORCE * fall;
       vy[id] += dvy * flow * FORCE * fall;
       if (pouring) {
-        // pour also shoves fluid radially outward from the point
-        vx[id] += ox * 0.9 * fall;
-        vy[id] += oy * 0.9 * fall;
+        // pour gently shoves fluid radially outward from the point
+        vx[id] += ox * 0.3 * fall;
+        vy[id] += oy * 0.3 * fall;
       }
-      const amt = (pouring ? dyeAmt * 4 + 0.8 : dyeAmt) * fall;
+      const amt = (pouring ? dyeAmt * 1.2 + 0.3 : dyeAmt) * fall;
       dr[id] += cr * amt;
       dg[id] += cg * amt;
       db[id] += cb * amt;
